@@ -61,6 +61,24 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    mo.md(
+        r"""
+        This is how many characters your post uses out of the allowed 300:
+
+        (This only updates when you move the cursor out of the content box)
+        """
+    )
+    return
+
+
+@app.cell
+def _(mo, post_content):
+    mo.show_code(str(len(post_content.value)))
+    return
+
+
+@app.cell
+def _(mo):
     mo.md(r"""For the first link in the post, what should the title of the preview be?""")
     return
 
