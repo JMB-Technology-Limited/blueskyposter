@@ -92,12 +92,10 @@ def _(mo):
     return (preview_title,)
 
 
-app._unparsable_cell(
-    r"""
-    For the first link in the post, what should the title of the description be?
-    """,
-    name="_"
-)
+@app.cell
+def _(mo):
+    mo.md("""For the first link in the post, what should the title of the description be?""")
+    return
 
 
 @app.cell
