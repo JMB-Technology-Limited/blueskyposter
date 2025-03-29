@@ -109,6 +109,19 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    mo.md("""For the first link in the post, what is the URL of the image that should be attached?""")
+    return
+
+
+@app.cell
+def _(mo):
+    preview_image_url  = mo.ui.text(value="https://bsky.app/static/social-card-default-gradient.png", full_width=True)
+    preview_image_url
+    return (preview_image_url,)
+
+
+@app.cell
+def _(mo):
     mo.md(r"""Now press the button to post this!""")
     return
 
@@ -136,6 +149,7 @@ def _(
     mo,
     post_content,
     preview_description,
+    preview_image_url,
     preview_title,
     re,
     requests,
@@ -206,7 +220,6 @@ def _(
 
     if go_button.value:
         # Get Token
-        print({"identifier": bluesky_handle.value, "password": bluesky_app_password.value})
         resp = requests.post(
             "https://bsky.social/xrpc/com.atproto.server.createSession",
             json={"identifier": bluesky_handle.value, "password": bluesky_app_password.value},
@@ -215,15 +228,25 @@ def _(
         session = resp.json()
         bluesky_token = session["accessJwt"]
         bluesky_did = session["did"]
-        # Post
-        # Fetch the current time
-        # Using a trailing "Z" is preferred over the "+00:00" format
-        now = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+    
+        # Image
+        resp = requests.get(preview_image_url.value or "")
+        resp.raise_for_status()
 
+        blob_resp = requests.post(
+            "https://bsky.social/xrpc/com.atproto.repo.uploadBlob",
+            headers={
+                "Content-Type": resp.headers.get('content-type', '').lower(),
+                "Authorization": "Bearer " + bluesky_token,
+            },
+            data=resp.content,
+        )
+        blob_resp.raise_for_status()
+        image_blob = blob_resp.json()["blob"]
     
+        # Make the post!
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
         urls = parse_urls(post_content.value)
-    
-        # Required fields that each post must include
         post = {
             "$type": "app.bsky.feed.post",
             "text": post_content.value,
@@ -234,6 +257,7 @@ def _(
                     "uri": urls[0]["url"],
                     "title": preview_title.value,
                     "description": preview_description.value,
+                    "thumb": image_blob
                 }
             },
             "facets": parse_facets(post_content.value)        
@@ -252,8 +276,10 @@ def _(
         mo.show_code(json.dumps(resp.json(), indent=2))
     
     return (
+        blob_resp,
         bluesky_did,
         bluesky_token,
+        image_blob,
         now,
         parse_facets,
         parse_mentions,
