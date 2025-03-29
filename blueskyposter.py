@@ -21,6 +21,8 @@ def _(mo):
         # Blue Sky Posting Tool
 
         First, what is your handle?
+
+        No @ at the start, and the full thing (this probably includes ".bsky.social" at the end)
         """
     )
     return
@@ -119,12 +121,19 @@ def _(mo):
 
 
 @app.cell
+def _(mo):
+    mo.md("""Nothing happens here when you press the button - go and check your profile!""")
+    return
+
+
+@app.cell
 def _(
     bluesky_app_password,
     bluesky_handle,
     datetime,
     go_button,
     json,
+    mo,
     post_content,
     preview_description,
     preview_title,
@@ -239,8 +248,9 @@ def _(
                 "record": post,
             },
         )
-        print(json.dumps(resp.json(), indent=2))
         resp.raise_for_status()
+        mo.show_code(json.dumps(resp.json(), indent=2))
+    
     return (
         bluesky_did,
         bluesky_token,
